@@ -1,5 +1,11 @@
 var config = require("./config.json"),
 	express = require("express"),
+	favicon = require("serve-favicon"),
+	morgan = require('morgan'),
+	cookieParser = require('cookie-parser'),
+	bodyParser = require('body-parser'),
+	methodOverride = require('method-override'),
+	errorHandler = require('errorhandler'),
 	routes = require("./routes.js"),
 	dbs = require("./libs/connectDbs.js"),
 	app = express();
@@ -7,27 +13,21 @@ var config = require("./config.json"),
 config.server.port = process.env.PORT || config.server.port;
 config.server.public_dir = process.env.PUBLIC_DIR || config.server.public_dir;
 
-app.configure(function(){
+app.use(favicon(config.server.public_dir + '/favicon.ico'));
+app.use(morgan('dev'));
 
-	app.use(express.favicon());
-	app.use(express.logger("dev"));
+app.use(bodyParser());
+app.use(cookieParser());
+app.use(methodOverride());
 
-	app.use(express.bodyParser());
-	app.use(express.cookieParser());
-	app.use(express.methodOverride());
+app.use(express["static"](config.server.public_dir));
 
-	app.use(app.router);
-
-	app.use(express["static"](config.server.public_dir));
-
-});
-
-app.configure("development", function() {
-    app.use(express.errorHandler({
-        dumpException: true,
-        showStack: true
-    }));
-});
+if (process.env.NODE_ENV === 'development') {
+	app.use(errorHandler({
+	    dumpException: true,
+	    showStack: true
+	}));
+}
 
 dbs.connect(config.dbs, function(errs, clients){
 	var db;
